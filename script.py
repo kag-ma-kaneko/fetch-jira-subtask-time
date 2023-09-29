@@ -13,13 +13,13 @@ JIRA_PASSWORD = ""
 OUTPUT_FILE = "Sprint188.json"
 
 # 集計対象のスプリント番号
-target_sprint_no = 'Sprint188'
+TARGET_SPRINT_NUMBER = 'Sprint188'
 
 # データ出力対象のスプリント情報およびサブタスク情報を取得するためのURLを入力する
 # 2414の部分はJiraボードによって異なるので、自チームのボードIDに置き換える
-sprint_info_url  = "https://agile.kddi.com/jira/rest/greenhopper/1.0/xboard/work/allData.json?rapidViewId=2414&selectedProjectKey=EVASS"
+SPRINT_INFO_URL  = "https://agile.kddi.com/jira/rest/greenhopper/1.0/xboard/work/allData.json?rapidViewId=2414&selectedProjectKey=EVASS"
 # jql部分は自チームのカンバンの設定にあわせて調整する
-subtask_info_url = f'https://agile.kddi.com/jira/rest/api/2/search?maxResults=300&jql=project%20%3D%20EVASS%20AND%20labels%20%3D%22%E9%87%91%E5%A4%AA%E9%83%8E%22%20AND%20%E3%82%B9%E3%83%97%E3%83%AA%E3%83%B3%E3%83%88%20%3D%20%22%E9%87%91%E5%A4%AA%E9%83%8E{target_sprint_no}%22%20AND%20labels%20not%20in%20(Impediment)%20AND%20summary%20!~%20template%20AND%20type%20!%3D%20Bug%20ORDER%20BY%20%E3%83%A9%E3%83%B3%E3%82%AF&expand=changelog'
+SUBTASK_INFO_URL = f'https://agile.kddi.com/jira/rest/api/2/search?maxResults=300&jql=project%20%3D%20EVASS%20AND%20labels%20%3D%22%E9%87%91%E5%A4%AA%E9%83%8E%22%20AND%20%E3%82%B9%E3%83%97%E3%83%AA%E3%83%B3%E3%83%88%20%3D%20%22%E9%87%91%E5%A4%AA%E9%83%8E{TARGET_SPRINT_NUMBER}%22%20AND%20labels%20not%20in%20(Impediment)%20AND%20summary%20!~%20template%20AND%20type%20!%3D%20Bug%20ORDER%20BY%20%E3%83%A9%E3%83%B3%E3%82%AF&expand=changelog'
 
 # 使用者の情報を入力する↑ここまで
 
@@ -30,14 +30,14 @@ def main():
     STATUS_DONE = "Done"
 
     sprint_info_response = requests.get(
-        url=sprint_info_url,
+        url=SPRINT_INFO_URL,
         auth=(JIRA_USERNAME, JIRA_PASSWORD)
     )
     sprint_info_list = sprint_info_response.json().get("sprintsData").get("sprints")
     sprint_info_json = sprint_info_list[0]
 
     subtask_info_response = requests.get(
-        url=subtask_info_url,
+        url=SUBTASK_INFO_URL,
         auth=(JIRA_USERNAME, JIRA_PASSWORD)
     )
 
