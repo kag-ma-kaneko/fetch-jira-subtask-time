@@ -12,6 +12,7 @@ JIRA_PASSWORD = ""
 # 最終的に出力するファイル名を入力する
 OUTPUT_FILE = "Sprint188.json"
 
+# 集計対象のスプリント番号を入力する
 target_sprint_no = 'Sprint188'
 
 # データ出力対象のスプリント情報およびサブタスク情報を取得するためのURLを入力する
