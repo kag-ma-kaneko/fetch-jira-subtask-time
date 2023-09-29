@@ -14,3 +14,6 @@
 # 関連情報
 UI側については以下から取得する
 https://github.com/kag-ma-kaneko/sprint-cycle-time
+
+# 参考：出力ファイルのイメージ
+<img width="1022" alt="image" src="https://media.github.kddi.com/user/534/files/84ab6ee3-f2e7-4ff8-9c33-b90e1b046114">
