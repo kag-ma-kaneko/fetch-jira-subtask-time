@@ -9,10 +9,10 @@ import requests
 JIRA_USERNAME = ""
 JIRA_PASSWORD = ""
 
-# 最終的に出力するファイル名を入力する
+# 最終的に出力するファイル名
 OUTPUT_FILE = "Sprint188.json"
 
-# 集計対象のスプリント番号を入力する
+# 集計対象のスプリント番号
 target_sprint_no = 'Sprint188'
 
 # データ出力対象のスプリント情報およびサブタスク情報を取得するためのURLを入力する
@@ -23,8 +23,8 @@ subtask_info_url = f'https://agile.kddi.com/jira/rest/api/2/search?maxResults=30
 
 # 使用者の情報を入力する↑ここまで
 
-def main(): 
 
+def main(): 
     STATUS_TODO = "ToDo"
     STATUS_ASSIGNED = "Assigned"
     STATUS_DONE = "Done"
@@ -52,6 +52,7 @@ def main():
         sprint_number = int(re.sub('[^0-9]+', '', sprint_name))
         if sprint_number is None:
             sprint_number = 0
+        # スプリントの開始/終了日時のデータをこの後UIに食わせる上で適切なフォーマットに変換する
         sprint_start_date_datetime = datetime.datetime.strptime(sprint_info_json.get("startDate"), '%Y/%m/%d %H:%M')
         sprint_end_date_datetime = datetime.datetime.strptime(sprint_info_json.get("endDate"), '%Y/%m/%d %H:%M')
         output_json["metaData"] = {"sprintNo": sprint_number, "beginDete": sprint_start_date_datetime.strftime('%Y-%m-%dT%H:%M:%S.000'), "endDate": sprint_end_date_datetime.strftime('%Y-%m-%dT%H:%M:%S.000')}
@@ -65,12 +66,14 @@ def main():
         fields = issue.get("fields")
         if fields:
             parent = fields.get("parent")
+            # parent情報がない = 親のバックログであるということ
             if parent is None:
                 backlog = {}
                 backlog["name"] = fields.get("summary")
                 backlog["key"] = issue.get("key")
                 backlog["subtasks"] = []
                 backlogs.append(backlog)
+            # parent情報がある = サブタスクであるということ
             else:
                 subtask = {}
                 subtask["name"] = fields.get("summary")
@@ -90,6 +93,7 @@ def main():
                 else:
                     subtask_assignee_name_str = "未割り当て"
 
+                # Jiraから引っ張ってきた情報の中にunicode文字が含まれているので削除する
                 subtask["pic"] = subtask_assignee_name_str.replace('\u3000', '')
 
                 change_logs = issue.get("changelog")
@@ -120,6 +124,7 @@ def main():
                                     subtask["end"] = status_change_datetime
                 subtasks.append(subtask)
     
+    # key情報を使ってサブタスク情報を親のバックログに紐付ける
     for backlog in backlogs:
         for subtask in subtasks:
             if subtask["parent_key"] == backlog["key"]:
