@@ -1,0 +1,11 @@
+{
+  "JIRA_USERNAME": "",
+  "JIRA_PASSWORD": "",
+  "OUTPUT_FILE": "xxx.json",
+  "TARGET_SPRINT_NUMBER": "xxx",
+  "TARGET_TEAM_NAME": "xxx",
+  "RAPIDVIEW_ID": "xxx",
+  "SPRINT_INFO_URL": "https://agile.kddi.com/jira/rest/greenhopper/1.0/xboard/work/allData.json?rapidViewId={RAPIDVIEW_ID}&selectedProjectKey=EVASS",
+  "JQL": "project = EVASS AND labels = \"{TARGET_TEAM_NAME}\" AND スプリント = \"{TARGET_TEAM_NAME}{TARGET_SPRINT_NUMBER}\" AND labels not in (Impediment) ORDER BY ランク",
+  "SUBTASK_INFO_URL": "https://agile.kddi.com/jira/rest/api/2/search?maxResults=300&jql={JQL}&expand=changelog"
+}
