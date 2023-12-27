@@ -8,7 +8,15 @@ import requests
 # Sprint情報取得処理
 def get_sprint_info(url, username, password):
     response = requests.get(url=url, auth=(username, password))
-    return response.json().get("sprintsData").get("sprints")[0]
+    return response.json().get("values")
+
+
+# 特定の名前のSprint情報を取得
+def get_specific_sprint(sprints, sprint_name):
+    for sprint in sprints:
+        if sprint["name"] == sprint_name:
+            return sprint
+    return None
 
 
 # Subtask情報取得処理
@@ -21,10 +29,8 @@ def get_subtask_info(url, username, password):
 def format_sprint_info(sprint_info):
     sprint_name = sprint_info.get("name")
     sprint_number = int(re.sub("[^0-9]+", "", sprint_name)) if sprint_name else 0
-    start_date = datetime.datetime.strptime(
-        sprint_info.get("startDate"), "%Y/%m/%d %H:%M"
-    )
-    end_date = datetime.datetime.strptime(sprint_info.get("endDate"), "%Y/%m/%d %H:%M")
+    start_date = datetime.datetime.fromisoformat(sprint_info.get("startDate"))
+    end_date = datetime.datetime.fromisoformat(sprint_info.get("endDate"))
 
     return {
         "sprintNo": sprint_number,
@@ -113,16 +119,17 @@ def main():
 
     # Sprint情報取得
     sprint_url = config["SPRINT_INFO_URL"].format(
-        RAPIDVIEW_ID=config["RAPIDVIEW_ID"],
+        BOARD_ID=config["BOARD_ID"],
     )
-    sprint_info = get_sprint_info(
-        sprint_url, config["JIRA_USERNAME"], config["JIRA_PASSWORD"]
+    sprint_info = get_specific_sprint(
+        get_sprint_info(sprint_url, config["JIRA_USERNAME"], config["JIRA_PASSWORD"]),
+        config["TARGET_SPRINT_NAME"],
     )
 
     # Subtask情報取得
     jql = config["JQL"].format(
-        TARGET_TEAM_NAME=config["TARGET_TEAM_NAME"],
-        TARGET_SPRINT_NUMBER=config["TARGET_SPRINT_NUMBER"],
+        TARGET_TEAM_LABEL=config["TARGET_TEAM_LABEL"],
+        TARGET_SPRINT_NAME=config["TARGET_SPRINT_NAME"],
     )
     subtask_url = config["SUBTASK_INFO_URL"].format(JQL=jql)
     subtask_info = get_subtask_info(
