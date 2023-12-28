@@ -4,6 +4,16 @@ import json
 import re
 import requests
 
+# 設定\
+# スプリント情報取得API
+SPRINT_INFO_URL = "https://agile.kddi.com/jira/rest/agile/1.0/board/{BOARD_ID}/sprint?&state=active,future"
+
+# Subtask情報取得API
+SUBTASK_INFO_URL = "https://agile.kddi.com/jira/rest/api/2/search?maxResults=300&jql={JQL}&expand=changelog"
+
+# フィルター
+JQL = 'project = EVASS AND labels = "{TARGET_TEAM_LABEL}" AND スプリント = "{TARGET_SPRINT_NAME}" AND labels not in (Impediment) ORDER BY ランク'
+
 
 # Sprint情報取得処理
 def get_sprint_info(url, username, password):
@@ -118,7 +128,7 @@ def main():
         config = json.load(f)
 
     # Sprint情報取得
-    sprint_url = config["SPRINT_INFO_URL"].format(
+    sprint_url = SPRINT_INFO_URL.format(
         BOARD_ID=config["BOARD_ID"],
     )
     sprint_info = get_specific_sprint(
@@ -127,11 +137,11 @@ def main():
     )
 
     # Subtask情報取得
-    jql = config["JQL"].format(
+    jql = JQL.format(
         TARGET_TEAM_LABEL=config["TARGET_TEAM_LABEL"],
         TARGET_SPRINT_NAME=config["TARGET_SPRINT_NAME"],
     )
-    subtask_url = config["SUBTASK_INFO_URL"].format(JQL=jql)
+    subtask_url = SUBTASK_INFO_URL.format(JQL=jql)
     subtask_info = get_subtask_info(
         subtask_url, config["JIRA_USERNAME"], config["JIRA_PASSWORD"]
     )

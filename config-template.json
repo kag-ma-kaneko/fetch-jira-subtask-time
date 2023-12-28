@@ -4,8 +4,5 @@
   "OUTPUT_FILE": "ocean-sprint195.json",
   "TARGET_SPRINT_NAME": "全体Sprint195",
   "TARGET_TEAM_LABEL": "浦島",
-  "BOARD_ID": "2880",
-  "SPRINT_INFO_URL": "https://agile.kddi.com/jira/rest/agile/1.0/board/{BOARD_ID}/sprint?&state=active,future",
-  "JQL": "project = EVASS AND labels = \"{TARGET_TEAM_LABEL}\" AND スプリント = \"{TARGET_SPRINT_NAME}\" AND labels not in (Impediment) ORDER BY ランク",
-  "SUBTASK_INFO_URL": "https://agile.kddi.com/jira/rest/api/2/search?maxResults=300&jql={JQL}&expand=changelog"
+  "BOARD_ID": "2880"
 }
