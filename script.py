@@ -4,6 +4,7 @@ import json
 import re
 import requests
 
+
 # 設定\
 # スプリント情報取得API
 SPRINT_INFO_URL = "https://agile.kddi.com/jira/rest/agile/1.0/board/{BOARD_ID}/sprint?&state=active,future"
@@ -111,6 +112,15 @@ def update_subtask_status(subtask, item, history):
         subtask["start"] = status_change_datetime
     elif to_status == "Done":
         subtask["end"] = status_change_datetime
+
+    # startとendが両方存在する場合、その間の時間（分）を計算
+    if "start" in subtask and "end" in subtask:
+        start_time = datetime.datetime.strptime(
+            subtask["start"], "%Y-%m-%dT%H:%M:%S.%f"
+        )
+        end_time = datetime.datetime.strptime(subtask["end"], "%Y-%m-%dT%H:%M:%S.%f")
+        duration = int((end_time - start_time).total_seconds() / 60)  # 分単位で計算
+        subtask["duration"] = duration
 
 
 def associate_subtasks_with_backlogs(backlogs, subtasks):
