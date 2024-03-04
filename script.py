@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-import datetime
+from datetime import datetime, timedelta
+from dateutil import parser
+from workalendar.asia import Japan
+import pytz
 import json
 import re
 import requests
@@ -14,6 +17,19 @@ SUBTASK_INFO_URL = "https://agile.kddi.com/jira/rest/api/2/search?maxResults=300
 
 # フィルター
 JQL = 'project = EVASS AND labels = "{TARGET_TEAM_LABEL}" AND スプリント = "{TARGET_SPRINT_NAME}" AND labels not in (Impediment) ORDER BY ランク'
+
+
+class WorkHours:
+    def __init__(self, start, end, weekends):
+        self.start = start
+        self.end = end
+        self.weekends = weekends
+
+    def is_within(self, dt):
+        return (
+            dt.strftime("%A") not in self.weekends
+            and self.start <= dt.time() <= self.end
+        )
 
 
 # Sprint情報取得処理
@@ -40,8 +56,8 @@ def get_subtask_info(url, username, password):
 def format_sprint_info(sprint_info):
     sprint_name = sprint_info.get("name")
     sprint_number = int(re.sub("[^0-9]+", "", sprint_name)) if sprint_name else 0
-    start_date = datetime.datetime.fromisoformat(sprint_info.get("startDate"))
-    end_date = datetime.datetime.fromisoformat(sprint_info.get("endDate"))
+    start_date = datetime.fromisoformat(sprint_info.get("startDate"))
+    end_date = datetime.fromisoformat(sprint_info.get("endDate"))
 
     return {
         "sprintNo": sprint_number,
@@ -51,7 +67,7 @@ def format_sprint_info(sprint_info):
 
 
 # Subtask情報を整形する処理
-def format_subtask_info(issues):
+def format_subtask_info(issues, sprint, work_hours):
     backlogs = []
     subtasks = []
 
@@ -61,6 +77,8 @@ def format_subtask_info(issues):
             continue
 
         parent = fields.get("parent")
+
+        # 親Issueがない場合、Backlogとして扱う
         if parent is None:
             backlog = {
                 "name": fields.get("summary"),
@@ -69,7 +87,7 @@ def format_subtask_info(issues):
             }
             backlogs.append(backlog)
         else:
-            subtask = create_subtask(fields, issue, parent)
+            subtask = create_subtask(fields, issue, parent, work_hours)
             subtasks.append(subtask)
 
     associate_subtasks_with_backlogs(backlogs, subtasks)
@@ -77,7 +95,7 @@ def format_subtask_info(issues):
 
 
 #
-def create_subtask(fields, issue, parent):
+def create_subtask(fields, issue, parent, work_hours):
     assignee = fields.get("assignee")
     assignees = fields.get("customfield_10205")
     assignee_names = [a.get("displayName") for a in assignees] if assignees else []
@@ -98,15 +116,15 @@ def create_subtask(fields, issue, parent):
         items = history.get("items", [])
         for item in items:
             if item.get("field") == "status":
-                update_subtask_status(subtask, item, history)
+                update_subtask_status(subtask, item, history, work_hours)
 
     return subtask
 
 
-def update_subtask_status(subtask, item, history):
+def update_subtask_status(subtask, item, history, work_hours):
     from_status = item.get("fromString", "なし")
     to_status = item.get("toString", "なし")
-    status_change_datetime = history.get("created").replace("+0900", "")
+    status_change_datetime = history.get("created")
 
     if (from_status in ["ToDo", "Assigned"]) and to_status != "Done":
         subtask["start"] = status_change_datetime
@@ -115,11 +133,18 @@ def update_subtask_status(subtask, item, history):
 
     # startとendが両方存在する場合、その間の時間（分）を計算
     if "start" in subtask and "end" in subtask:
-        start_time = datetime.datetime.strptime(
-            subtask["start"], "%Y-%m-%dT%H:%M:%S.%f"
-        )
-        end_time = datetime.datetime.strptime(subtask["end"], "%Y-%m-%dT%H:%M:%S.%f")
-        duration = int((end_time - start_time).total_seconds() / 60)  # 分単位で計算
+        start_time = parser.parse(subtask["start"])
+        end_time = parser.parse(subtask["end"])
+
+        # 休日と祝日を除外
+        cal = Japan()
+        duration = 0
+        current_time = start_time
+        while current_time <= end_time:
+            if not cal.is_holiday(current_time) and work_hours.is_within(current_time):
+                duration += 10
+            current_time += timedelta(minutes=10)
+
         subtask["duration"] = duration
 
 
@@ -157,9 +182,14 @@ def main():
     )
 
     # 出力処理
+    work_hours = WorkHours(
+        datetime.strptime(config["work_hour"]["start"], "%H:%M").time(),
+        datetime.strptime(config["work_hour"]["end"], "%H:%M").time(),
+        config["weekends"],
+    )
     output_json = {
         "metaData": format_sprint_info(sprint_info),
-        "backlogs": format_subtask_info(subtask_info),
+        "backlogs": format_subtask_info(subtask_info, sprint_info, work_hours),
     }
 
     with open(config["OUTPUT_FILE"], "w") as f:

@@ -8,6 +8,9 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 requests = "^2.31.0"
+python-dateutil = "^2.9.0.post0"
+pytz = "^2024.1"
+workalendar = "^17.0.0"
 
 
 [build-system]
