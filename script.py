@@ -149,13 +149,16 @@ def update_subtask_status(subtask, item, history, work_hours):
         subtask["duration"] = duration
 
 
+# SubtaskをBacklogに紐付ける処理
 def associate_subtasks_with_backlogs(backlogs, subtasks):
     for backlog in backlogs:
         for subtask in subtasks:
             if subtask["parent_key"] == backlog["key"]:
                 if subtask.get("start") and subtask.get("end"):
                     backlog["subtasks"].append(subtask)
-        del backlog["key"]
+
+        # PBI毎にSubtaskの合計時間を計算
+        backlog["total"] = sum(sub_task["duration"] for sub_task in backlog["subtasks"])
 
 
 def main():
@@ -182,17 +185,20 @@ def main():
         subtask_url, config["JIRA_USERNAME"], config["JIRA_PASSWORD"]
     )
 
-    # 出力処理
+    # 勤務時間取得
     work_hours = WorkHours(
         datetime.strptime(config["work_hour"]["start"], "%H:%M").time(),
         datetime.strptime(config["work_hour"]["end"], "%H:%M").time(),
         config["weekends"],
     )
+
+    # 出力用JSON作成
     output_json = {
         "metaData": format_sprint_info(sprint_info),
         "backlogs": format_subtask_info(subtask_info, sprint_info, work_hours),
     }
 
+    # 出力処理
     with open(config["OUTPUT_FILE"], "w") as f:
         json.dump(output_json, f, ensure_ascii=False, indent=4)
 
