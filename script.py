@@ -82,6 +82,7 @@ def format_subtask_info(issues, sprint, work_hours):
         if parent is None:
             backlog = {
                 "name": fields.get("summary"),
+                "point": int(fields.get("customfield_10008")),
                 "key": issue.get("key"),
                 "subtasks": [],
             }
