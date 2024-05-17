@@ -97,14 +97,19 @@ def format_subtask_info(issues, sprint, work_hours):
 
 #
 def create_subtask(fields, issue, parent, work_hours):
+
+    # 担当者情報取得
+    # 担当者情報が二箇所に存在するため、両方取得して結合
+    # customfield_10205には複数の担当者が存在するためそれらも結合
     assignee = fields.get("assignee")
+    main_name = [assignee.get("displayName")] if assignee else []
+
     assignees = fields.get("customfield_10205")
-    assignee_names = [a.get("displayName") for a in assignees] if assignees else []
-    assignee_name_str = (
-        ",".join([assignee.get("displayName")] + assignee_names)
-        if assignee
-        else "未割り当て"
-    )
+    sub_names = [a.get("displayName") for a in assignees] if assignees else []
+
+    assignee_name_str = ",".join(main_name + sub_names)
+    if assignee_name_str == "":
+        assignee_name_str = "未割り当て"
 
     subtask = {
         "name": fields.get("summary"),
