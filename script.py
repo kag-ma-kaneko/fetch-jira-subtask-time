@@ -20,16 +20,22 @@ JQL = 'project = EVASS AND labels = "{TARGET_TEAM_LABEL}" AND スプリント = 
 
 
 class WorkHours:
-    def __init__(self, start, end, weekends):
-        self.start = start
-        self.end = end
+    def __init__(self, work_hours, weekends):
+        self.time_ranges = [
+            (self.parse_time(hours["start"]), self.parse_time(hours["end"]))
+            for hours in work_hours
+        ]
         self.weekends = weekends
 
+    def parse_time(self, time_str):
+        return datetime.strptime("2024-01-01 " + time_str, "%Y-%m-%d %H:%M").time()
+
     def is_within(self, dt):
-        return (
-            dt.strftime("%A") not in self.weekends
-            and self.start <= dt.time() <= self.end
-        )
+        for start_time, end_time in self.time_ranges:
+            if start_time <= dt.time() <= end_time:
+                if dt.strftime("%A") not in self.weekends:
+                    return True
+        return False
 
 
 # Sprint情報取得処理
@@ -192,8 +198,7 @@ def main():
 
     # 勤務時間取得
     work_hours = WorkHours(
-        datetime.strptime(config["work_hour"]["start"], "%H:%M").time(),
-        datetime.strptime(config["work_hour"]["end"], "%H:%M").time(),
+        config["work_hours"],
         config["weekends"],
     )
 
