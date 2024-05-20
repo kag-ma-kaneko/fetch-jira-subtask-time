@@ -38,6 +38,18 @@ class WorkHours:
         return False
 
 
+# start/endから差の時間を計算する
+def calc_duration(start_time, end_time, work_hours):
+    cal = Japan()
+    duration = 0
+    current_time = start_time
+    while current_time <= end_time:
+        if not cal.is_holiday(current_time) and work_hours.is_within(current_time):
+            duration += 10
+        current_time += timedelta(minutes=10)
+    return duration
+
+
 # Sprint情報取得処理
 def get_sprint_info(url, username, password):
     response = requests.get(url=url, auth=(username, password))
@@ -86,10 +98,21 @@ def format_subtask_info(issues, sprint, work_hours):
 
         # 親Issueがない場合、Backlogとして扱う
         if parent is None:
+            start = fields.get("customfield_14323")
+            end = fields.get("customfield_14324")
+            cycle = None
+            if start and end:
+                dt1 = datetime.strptime(start, "%Y-%m-%dT%H:%M:%S.%f%z")
+                dt2 = datetime.strptime(end, "%Y-%m-%dT%H:%M:%S.%f%z")
+                cycle = calc_duration(dt1, dt2, work_hours)
+
             backlog = {
                 "name": fields.get("summary"),
                 "point": int(fields.get("customfield_10008")),
                 "key": issue.get("key"),
+                "start": start,
+                "end": end,
+                "cycle": cycle,
                 "subtasks": [],
             }
             backlogs.append(backlog)
@@ -147,17 +170,7 @@ def update_subtask_status(subtask, item, history, work_hours):
     if "start" in subtask and "end" in subtask:
         start_time = parser.parse(subtask["start"])
         end_time = parser.parse(subtask["end"])
-
-        # 休日と祝日を除外
-        cal = Japan()
-        duration = 0
-        current_time = start_time
-        while current_time <= end_time:
-            if not cal.is_holiday(current_time) and work_hours.is_within(current_time):
-                duration += 10
-            current_time += timedelta(minutes=10)
-
-        subtask["duration"] = duration
+        subtask["duration"] = calc_duration(start_time, end_time, work_hours)
 
 
 # SubtaskをBacklogに紐付ける処理
@@ -169,7 +182,9 @@ def associate_subtasks_with_backlogs(backlogs, subtasks):
                     backlog["subtasks"].append(subtask)
 
         # PBI毎にSubtaskの合計時間を計算
-        backlog["total"] = sum(sub_task["duration"] for sub_task in backlog["subtasks"])
+        backlog["subtask_total"] = sum(
+            sub_task["duration"] for sub_task in backlog["subtasks"]
+        )
 
 
 def main():
