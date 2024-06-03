@@ -108,7 +108,7 @@ def format_subtask_info(issues, sprint, work_hours):
 
             backlog = {
                 "name": fields.get("summary"),
-                "point": int(fields.get("customfield_10008")),
+                "point": int(fields.get("customfield_10008", 0)),
                 "key": issue.get("key"),
                 "start": start,
                 "end": end,
