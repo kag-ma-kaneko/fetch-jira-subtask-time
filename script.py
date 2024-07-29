@@ -84,6 +84,32 @@ def format_sprint_info(sprint_info):
     }
 
 
+def get_start_time_from_history(histories):
+    for history in histories:
+        items = history.get("items", [])
+        for item in items:
+            if item.get("field") == "status":
+                if (
+                    item.get("fromString") == "ToDo"
+                    and item.get("toString") == "IN-PROGRESS"
+                ):
+                    return history.get("created")
+    return None
+
+
+def get_end_time_from_history(histories):
+    for history in histories:
+        items = history.get("items", [])
+        for item in items:
+            if item.get("field") == "status":
+                if (
+                    item.get("fromString") == "IN-PROGRESS"
+                    and item.get("toString") == "Done"
+                ):
+                    return history.get("created")
+    return None
+
+
 # Subtask情報を整形する処理
 def format_subtask_info(issues, sprint, work_hours):
     backlogs = []
@@ -98,8 +124,10 @@ def format_subtask_info(issues, sprint, work_hours):
 
         # 親Issueがない場合、Backlogとして扱う
         if parent is None:
-            start = fields.get("customfield_14323")
-            end = fields.get("customfield_14324")
+
+            histories = issue.get("changelog", {}).get("histories", [])
+            start = get_start_time_from_history(histories)
+            end = get_end_time_from_history(histories)
             cycle = None
             if start and end:
                 dt1 = datetime.strptime(start, "%Y-%m-%dT%H:%M:%S.%f%z")
