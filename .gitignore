@@ -1,5 +1,6 @@
 *sprint*.json
 config.json
+response.json
 .DS_Store
 response.json
 __pycache__/
