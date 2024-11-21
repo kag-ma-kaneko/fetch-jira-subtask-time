@@ -16,7 +16,7 @@ SPRINT_INFO_URL = "https://agile.kddi.com/jira/rest/agile/1.0/board/{BOARD_ID}/s
 SUBTASK_INFO_URL = "https://agile.kddi.com/jira/rest/api/2/search?maxResults=300&jql={JQL}&expand=changelog"
 
 # フィルター
-JQL = 'project = EVASS AND labels = "{TARGET_TEAM_LABEL}" AND スプリント = "{TARGET_SPRINT_NAME}" AND labels not in (Impediment) ORDER BY ランク'
+JQL = 'project = EVASS AND status = Done AND labels IN ("sprint215", "sprint214") AND labels IN ("金太郎", "鬼ちゃん", "桃太郎", "浦島", "乙姫") AND labels not in (Impediment) '
 
 
 class WorkHours:
@@ -67,6 +67,11 @@ def get_specific_sprint(sprints, sprint_name):
 # Subtask情報取得処理
 def get_subtask_info(url, username, password):
     response = requests.get(url=url, auth=(username, password))
+
+    # for debug
+    with open("response.json", "w") as f:
+        json.dump(response.json(), f, ensure_ascii=False, indent=4)
+
     return response.json().get("issues")
 
 
@@ -237,6 +242,9 @@ def main():
         TARGET_SPRINT_NAME=config["TARGET_SPRINT_NAME"],
     )
     subtask_url = SUBTASK_INFO_URL.format(JQL=jql)
+
+    # for debug
+    print(subtask_url)
     subtask_info = get_subtask_info(
         subtask_url, config["JIRA_USERNAME"], config["JIRA_PASSWORD"]
     )
@@ -249,7 +257,6 @@ def main():
 
     # 出力用JSON作成
     output_json = {
-        "metaData": format_sprint_info(sprint_info),
         "backlogs": format_subtask_info(subtask_info, sprint_info, work_hours),
     }
 
