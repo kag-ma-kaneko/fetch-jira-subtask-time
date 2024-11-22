@@ -252,7 +252,7 @@ def main():
     backlogs = format_subtask_info(subtask_info, work_hours)
     output_json = {
         "backlogs": backlogs,
-        "bpi_num": len(backlogs),
+        "pbi_num": len(backlogs),
     }
 
     # 出力処理
