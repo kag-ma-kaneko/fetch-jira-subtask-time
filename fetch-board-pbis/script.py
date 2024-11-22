@@ -234,6 +234,7 @@ def main():
         f"AND labels IN ({sprint_labels}) "
         f"AND labels IN ({team_labels}) "
         f"AND labels NOT IN (Impediment)"
+        f"ORDER BY ランク"
     )
     subtask_url = SUBTASK_INFO_URL.format(JQL=jql)
     print(subtask_url)  # for debug
