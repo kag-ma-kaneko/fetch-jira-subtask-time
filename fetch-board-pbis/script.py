@@ -48,20 +48,6 @@ def calc_duration(start_time, end_time, work_hours):
     return duration
 
 
-# Sprint情報取得処理
-def get_sprint_info(url, username, password):
-    response = requests.get(url=url, auth=(username, password))
-    return response.json().get("values")
-
-
-# 特定の名前のSprint情報を取得
-def get_specific_sprint(sprints, sprint_name):
-    for sprint in sprints:
-        if sprint["name"] == sprint_name:
-            return sprint
-    return None
-
-
 # Subtask情報取得処理
 def get_subtask_info(url, username, password):
     response = requests.get(url=url, auth=(username, password))
