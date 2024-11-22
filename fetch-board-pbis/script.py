@@ -13,7 +13,7 @@ import requests
 SPRINT_INFO_URL = "https://agile.kddi.com/jira/rest/agile/1.0/board/{BOARD_ID}/sprint?&state=active,future"
 
 # Subtask情報取得API
-SUBTASK_INFO_URL = "https://agile.kddi.com/jira/rest/api/2/search?maxResults=300&jql={JQL}&expand=changelog"
+SUBTASK_INFO_URL = "https://agile.kddi.com/jira/rest/api/2/search?maxResults=1000&jql={JQL}&expand=changelog"
 
 
 class WorkHours:
@@ -224,11 +224,6 @@ def main():
     with open("config.json", "r") as f:
         config = json.load(f)
 
-    # Sprint情報取得
-    sprint_url = SPRINT_INFO_URL.format(
-        BOARD_ID=config["BOARD_ID"],
-    )
-
     # Subtask情報取得
     # ラベル配列を文字列化（カンマ区切りのリストに変換）
     sprint_labels = ", ".join(f'"{label}"' for label in config["SPRINT_LABELS"])
@@ -241,9 +236,7 @@ def main():
         f"AND labels NOT IN (Impediment)"
     )
     subtask_url = SUBTASK_INFO_URL.format(JQL=jql)
-
-    # for debug
-    print(subtask_url)
+    print(subtask_url)  # for debug
     subtask_info = get_subtask_info(
         subtask_url, config["JIRA_USERNAME"], config["JIRA_PASSWORD"]
     )
@@ -258,7 +251,7 @@ def main():
     backlogs = format_subtask_info(subtask_info, work_hours)
     output_json = {
         "backlogs": backlogs,
-        "backlog_num": len(backlogs),
+        "bpi_num": len(backlogs),
     }
 
     # 出力処理
