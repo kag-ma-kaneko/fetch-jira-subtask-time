@@ -1,10 +1,9 @@
 {
   "JIRA_USERNAME": "xxx",
   "JIRA_PASSWORD": "xx",
-  "OUTPUT_FILE": "ocean-sprint195.json",
-  "TARGET_SPRINT_NAME": "全体Sprint195",
-  "TARGET_TEAM_LABEL": "浦島",
-  "BOARD_ID": "2880",
+  "OUTPUT_FILE": "sprint214-215.json",
+  "TEAM_LABELS": ["桃太郎", "金太郎", "浦島", "鬼ちゃん", "乙姫"],
+  "SPRINT_LABELS": ["sprint214", "sprint213"],
   "work_hours": [
     {
       "start": "10:00",
