@@ -6,6 +6,7 @@ import pytz
 import json
 import re
 import requests
+from config import load_config
 
 
 # 設定\
@@ -221,8 +222,7 @@ def associate_subtasks_with_backlogs(backlogs, subtasks):
 
 def main():
     # 設定ファイル読み込み
-    with open("config.json", "r") as f:
-        config = json.load(f)
+    config = load_config()
 
     # Subtask情報取得
     # ラベル配列を文字列化（カンマ区切りのリストに変換）
