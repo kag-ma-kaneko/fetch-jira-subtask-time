@@ -256,8 +256,10 @@ def main():
     )
 
     # 出力用JSON作成
+    backlogs = format_subtask_info(subtask_info, sprint_info, work_hours)
     output_json = {
-        "backlogs": format_subtask_info(subtask_info, sprint_info, work_hours),
+        "backlogs": backlogs,
+        "backlog_num": len(backlogs),
     }
 
     # 出力処理
