@@ -160,6 +160,7 @@ def create_subtask(fields, issue, parent, work_hours):
 
     subtask = {
         "name": fields.get("summary"),
+        "label": fields.get("labels"),
         "parent_key": parent.get("key"),
         "pic": assignee_name_str.replace("\u3000", ""),
     }
