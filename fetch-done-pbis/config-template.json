@@ -1,0 +1,15 @@
+{
+  "JIRA_USERNAME": "xxx",
+  "JIRA_PASSWORD": "xx",
+  "OUTPUT_FILE": "ocean-sprint195.json",
+  "TARGET_SPRINT_NAME": "全体Sprint195",
+  "TARGET_TEAM_LABEL": "浦島",
+  "BOARD_ID": "2880",
+  "work_hours": [
+    {
+      "start": "10:00",
+      "end": "18:30"
+    }
+  ],
+  "weekends": ["Saturday", "Sunday"]
+}
