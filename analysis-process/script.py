@@ -68,7 +68,7 @@ def calculate_stage_times_by_pbi(backlogs):
             if times["start"] and times["end"]:
                 start = datetime.strptime(times["start"], "%Y-%m-%dT%H:%M:%S.%f%z")
                 end = datetime.strptime(times["end"], "%Y-%m-%dT%H:%M:%S.%f%z")
-                total_minutes = (end - start).total_seconds() / 60
+                total_minutes = int((end - start).total_seconds() / 60)
                 formatted_stages[stage] = {
                     "start": times["start"],
                     "end": times["end"],
@@ -94,9 +94,10 @@ def main():
     for pbi in value_stream_by_pbi:
         print(f"PBI: {pbi['pbi_name']}")
         for stage, details in pbi["stages"].items():
+            print(f"  {stage}: {details['total_doing_time']}分")
             print(f"  開始時刻: {details['start']}")
             print(f"  終了時刻: {details['end']}")
-            print(f"  {stage}: {details['total_doing_time']}分")
+            print()
         print()
 
     # 必要に応じてファイルに保存
