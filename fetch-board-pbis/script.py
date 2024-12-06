@@ -136,6 +136,7 @@ def format_subtask_info(issues, sprint, work_hours):
 
             backlog = {
                 "name": fields.get("summary"),
+                "labels": fields.get("labels"),
                 "point": int(fields.get("customfield_10008", 0)),
                 "key": issue.get("key"),
                 "start": start,
@@ -170,6 +171,7 @@ def create_subtask(fields, issue, parent, work_hours):
 
     subtask = {
         "name": fields.get("summary"),
+        "labels": fields.get("labels"),
         "parent_key": parent.get("key"),
         "pic": assignee_name_str.replace("\u3000", ""),
     }
