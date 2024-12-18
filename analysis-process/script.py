@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import json
 from collections import defaultdict
 from datetime import datetime
@@ -82,8 +83,22 @@ def calculate_stage_times_by_pbi(backlogs):
 
 # メイン処理
 def main():
+
+    # 引数を解析
+    parser = argparse.ArgumentParser(description="PBI情報を処理するスクリプト")
+    parser.add_argument(
+        "input_file", type=str, help="処理対象のJSONファイルのパスを指定してください"
+    )
+    parser.add_argument(
+        "--output_file",
+        type=str,
+        default="output.json",
+        help="結果を保存するJSONファイルのパスを指定してください (デフォルト: output.json)",
+    )
+    args = parser.parse_args()
+
     # データを読み込む
-    with open("peach-sprint216.json", "r") as f:
+    with open(args.input_file, "r") as f:
         data = json.load(f)
 
     # PBIごとのバリューストリームを計算
@@ -101,7 +116,7 @@ def main():
         print()
 
     # 必要に応じてファイルに保存
-    with open("value_stream_by_pbi.json", "w") as f:
+    with open(args.output_file, "w") as f:
         json.dump(value_stream_by_pbi, f, ensure_ascii=False, indent=4)
 
 
