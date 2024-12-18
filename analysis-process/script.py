@@ -10,7 +10,7 @@ LABEL_TO_STAGE = {
     "要求定義": ["要求定義"],
     "設計": ["設計"],
     "実装": ["実装"],
-    "試験": ["試験"],
+    "試験": ["試験", "テスト"],
     "リリース": ["リリース"],
 }
 
@@ -40,7 +40,7 @@ def calculate_stage_times_by_pbi(backlogs):
 
         # サブタスクを工程ごとにグルーピング
         for subtask in subtasks:
-            labels = subtask.get("label", [])
+            labels = subtask.get("labels", [])
             stage = get_stage_from_labels(labels)
 
             if not stage:
