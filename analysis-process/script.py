@@ -25,6 +25,13 @@ def get_stage_from_labels(labels):
     return None  # マッチする工程がない場合
 
 
+def safe_parse_datetime(date_str, default="2030-01-01T00:00:00.000+0000"):
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f%z")
+    except (ValueError, TypeError):  # TypeErrorはNoneの場合
+        return datetime.strptime(default, "%Y-%m-%dT%H:%M:%S.%f%z")
+
+
 def calculate_stage_times_by_pbi(backlogs):
     """
     各PBI内でサブタスクを工程ごとにグルーピングし、工程の所要時間を計算する
@@ -33,6 +40,10 @@ def calculate_stage_times_by_pbi(backlogs):
 
     for backlog in backlogs:
         pbi_name = backlog.get("name", "Unnamed PBI")
+        pbi_start = safe_parse_datetime(backlog.get("start"))
+        pbi_end = safe_parse_datetime(backlog.get("end"))
+        pbi_minutes = int((pbi_end - pbi_start).total_seconds() / 60)
+
         subtasks = backlog.get("subtasks", [])
         stage_times = defaultdict(
             lambda: {"total_duration": 0, "start": None, "end": None}
@@ -76,7 +87,15 @@ def calculate_stage_times_by_pbi(backlogs):
                     "total_doing_time": total_minutes,
                 }
 
-        results.append({"pbi_name": pbi_name, "stages": formatted_stages})
+        results.append(
+            {
+                "pbi_name": pbi_name,
+                "pbi_minutes": pbi_minutes,
+                "pbi_start": backlog.get("start"),
+                "pbi_end": backlog.get("end"),
+                "stages": formatted_stages,
+            }
+        )
 
     return results
 
@@ -108,10 +127,13 @@ def main():
     print("PBIごとの工程ごとの時間:")
     for pbi in value_stream_by_pbi:
         print(f"PBI: {pbi['pbi_name']}")
+        print(f"  総所要時間: {pbi['pbi_minutes']}分")
+        print(f"  開始時刻: {pbi['pbi_start']}")
+        print(f"  終了時刻: {pbi['pbi_end']}")
         for stage, details in pbi["stages"].items():
-            print(f"  {stage}: {details['total_doing_time']}分")
-            print(f"  開始時刻: {details['start']}")
-            print(f"  終了時刻: {details['end']}")
+            print(f"    {stage}: {details['total_doing_time']}分")
+            print(f"    開始時刻: {details['start']}")
+            print(f"    終了時刻: {details['end']}")
             print()
         print()
 
