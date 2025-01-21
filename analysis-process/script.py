@@ -127,14 +127,13 @@ def main():
     print("PBIごとの工程ごとの時間:")
     for pbi in value_stream_by_pbi:
         print(f"PBI: {pbi['pbi_name']}")
-        print(f"  総所要時間: {pbi['pbi_minutes']}分")
+        print(f"  所要時間: {pbi['pbi_minutes']}分")
         print(f"  開始時刻: {pbi['pbi_start']}")
         print(f"  終了時刻: {pbi['pbi_end']}")
         for stage, details in pbi["stages"].items():
             print(f"    {stage}: {details['total_doing_time']}分")
             print(f"    開始時刻: {details['start']}")
             print(f"    終了時刻: {details['end']}")
-            print()
         print()
 
     # 必要に応じてファイルに保存
