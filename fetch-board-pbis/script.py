@@ -6,7 +6,6 @@ import pytz
 import json
 import re
 import requests
-from config import load_config
 
 
 # 設定\
@@ -14,7 +13,10 @@ from config import load_config
 SPRINT_INFO_URL = "https://agile.kddi.com/jira/rest/agile/1.0/board/{BOARD_ID}/sprint?&state=active,future"
 
 # Subtask情報取得API
-SUBTASK_INFO_URL = "https://agile.kddi.com/jira/rest/api/2/search?maxResults=1000&jql={JQL}&expand=changelog"
+SUBTASK_INFO_URL = "https://agile.kddi.com/jira/rest/api/2/search?maxResults=300&jql={JQL}&expand=changelog"
+
+# フィルター
+JQL = 'project = EVASS AND labels = "{TARGET_TEAM_LABEL}" AND スプリント = "{TARGET_SPRINT_NAME}" AND labels not in (Impediment) ORDER BY ランク'
 
 
 class WorkHours:
@@ -48,14 +50,23 @@ def calc_duration(start_time, end_time, work_hours):
     return duration
 
 
+# Sprint情報取得処理
+def get_sprint_info(url, username, password):
+    response = requests.get(url=url, auth=(username, password))
+    return response.json().get("values")
+
+
+# 特定の名前のSprint情報を取得
+def get_specific_sprint(sprints, sprint_name):
+    for sprint in sprints:
+        if sprint["name"] == sprint_name:
+            return sprint
+    return None
+
+
 # Subtask情報取得処理
 def get_subtask_info(url, username, password):
     response = requests.get(url=url, auth=(username, password))
-
-    # for debug
-    with open("response.json", "w") as f:
-        json.dump(response.json(), f, ensure_ascii=False, indent=4)
-
     return response.json().get("issues")
 
 
@@ -100,7 +111,7 @@ def get_end_time_from_history(histories):
 
 
 # Subtask情報を整形する処理
-def format_subtask_info(issues, work_hours):
+def format_subtask_info(issues, sprint, work_hours):
     backlogs = []
     subtasks = []
 
@@ -208,22 +219,24 @@ def associate_subtasks_with_backlogs(backlogs, subtasks):
 
 def main():
     # 設定ファイル読み込み
-    config = load_config()
+    with open("config.json", "r") as f:
+        config = json.load(f)
+
+    # Sprint情報取得
+    sprint_url = SPRINT_INFO_URL.format(
+        BOARD_ID=config["BOARD_ID"],
+    )
+    sprint_info = get_specific_sprint(
+        get_sprint_info(sprint_url, config["JIRA_USERNAME"], config["JIRA_PASSWORD"]),
+        config["TARGET_SPRINT_NAME"],
+    )
 
     # Subtask情報取得
-    # ラベル配列を文字列化（カンマ区切りのリストに変換）
-    sprint_labels = ", ".join(f'"{label}"' for label in config["SPRINT_LABELS"])
-    team_labels = ", ".join(f'"{label}"' for label in config["TEAM_LABELS"])
-
-    jql = (
-        f"project = EVASS AND status = Done "
-        f"AND labels IN ({sprint_labels}) "
-        f"AND labels IN ({team_labels}) "
-        f"AND labels NOT IN (Impediment)"
-        f"ORDER BY ランク"
+    jql = JQL.format(
+        TARGET_TEAM_LABEL=config["TARGET_TEAM_LABEL"],
+        TARGET_SPRINT_NAME=config["TARGET_SPRINT_NAME"],
     )
     subtask_url = SUBTASK_INFO_URL.format(JQL=jql)
-    print(subtask_url)  # for debug
     subtask_info = get_subtask_info(
         subtask_url, config["JIRA_USERNAME"], config["JIRA_PASSWORD"]
     )
@@ -235,10 +248,9 @@ def main():
     )
 
     # 出力用JSON作成
-    backlogs = format_subtask_info(subtask_info, work_hours)
     output_json = {
-        "backlogs": backlogs,
-        "pbi_num": len(backlogs),
+        "metaData": format_sprint_info(sprint_info),
+        "backlogs": format_subtask_info(subtask_info, sprint_info, work_hours),
     }
 
     # 出力処理
