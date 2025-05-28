@@ -1,0 +1,7 @@
+{
+  "JIRA_USERNAME": "xxx",
+  "JIRA_PASSWORD": "xxx",
+  "OUTPUT_FILE": "sprint229.json",
+  "TEAM_LABELS": ["桃太郎", "金太郎", "浦島", "鬼ちゃん", "乙姫", "ライチ"],
+  "SPRINT_LABELS": ["sprint229", "sprint230"]
+}
