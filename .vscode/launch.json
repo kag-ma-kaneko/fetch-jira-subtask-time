@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: fetch-board-pbis",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/fetch-board-pbis/script.py",
+      "cwd": "${workspaceFolder}/fetch-board-pbis",
+      "console": "integratedTerminal"
+    }
+  ]
+}
