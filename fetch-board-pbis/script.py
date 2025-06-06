@@ -2,23 +2,27 @@
 from datetime import datetime, timedelta
 from dateutil import parser
 from workalendar.asia import Japan
-import pytz
 import json
 import re
 import requests
 
 
-# 設定\
+# === 設定/定数定義 =======================================
 # スプリント情報取得API
 SPRINT_INFO_URL = "https://agile.kddi.com/jira/rest/agile/1.0/board/{BOARD_ID}/sprint?&state=active,future"
 
 # Subtask情報取得API
-SUBTASK_INFO_URL = "https://agile.kddi.com/jira/rest/api/2/search?maxResults=300&jql={JQL}&expand=changelog"
+SUBTASK_INFO_URL = "https://agile.kddi.com/jira/rest/api/2/search?maxResults=300&jql={JQL}&expand=changelog,subtasks"
 
 # フィルター
-JQL = 'project = EVASS AND labels = "{TARGET_TEAM_LABEL}" AND スプリント = "{TARGET_SPRINT_NAME}" AND labels not in (Impediment) ORDER BY ランク'
+JQL = (
+    'project = EVASS AND labels = "{TARGET_TEAM_LABEL}" '
+    'AND スプリント = "{TARGET_SPRINT_NAME}" '
+    'AND labels not in (Impediment) ORDER BY ランク'
+)
 
 
+# === クラス定義（WorkHours） =============================
 class WorkHours:
     def __init__(self, work_hours, weekends):
         self.time_ranges = [
@@ -50,6 +54,7 @@ def calc_duration(start_time, end_time, work_hours):
     return duration
 
 
+# === APIアクセス関数群 ===================================
 # Sprint情報取得処理
 def get_sprint_info(url, username, password):
     response = requests.get(url=url, auth=(username, password))
@@ -111,7 +116,7 @@ def get_end_time_from_history(histories):
 
 
 # Subtask情報を整形する処理
-def format_subtask_info(issues, sprint, work_hours):
+def format_subtask_info(issues, work_hours):
     backlogs = []
     subtasks = []
 
@@ -125,32 +130,36 @@ def format_subtask_info(issues, sprint, work_hours):
         # 親Issueがない場合、Backlogとして扱う
         if parent is None:
 
-            histories = issue.get("changelog", {}).get("histories", [])
-            start = get_start_time_from_history(histories)
-            end = get_end_time_from_history(histories)
-            cycle = None
-            if start and end:
-                dt1 = datetime.strptime(start, "%Y-%m-%dT%H:%M:%S.%f%z")
-                dt2 = datetime.strptime(end, "%Y-%m-%dT%H:%M:%S.%f%z")
-                cycle = calc_duration(dt1, dt2, work_hours)
-
-            backlog = {
-                "name": fields.get("summary"),
-                "labels": fields.get("labels"),
-                "point": int(fields.get("customfield_10008", 0)),
-                "key": issue.get("key"),
-                "start": start,
-                "end": end,
-                "cycle": cycle,
-                "subtasks": [],
-            }
-            backlogs.append(backlog)
+            pbi = create_backlogItem(fields, issue, work_hours)
+            backlogs.append(pbi)
         else:
             subtask = create_subtask(fields, issue, parent, work_hours)
             subtasks.append(subtask)
 
     associate_subtasks_with_backlogs(backlogs, subtasks)
     return backlogs
+
+
+def create_backlogItem(fields, issue, work_hours):
+    histories = issue.get("changelog", {}).get("histories", [])
+    start = get_start_time_from_history(histories)
+    end = get_end_time_from_history(histories)
+    cycle = None
+    if start and end:
+        dt1 = datetime.strptime(start, "%Y-%m-%dT%H:%M:%S.%f%z")
+        dt2 = datetime.strptime(end, "%Y-%m-%dT%H:%M:%S.%f%z")
+        cycle = calc_duration(dt1, dt2, work_hours)
+
+    return {
+        "name": fields.get("summary"),
+        "labels": fields.get("labels"),
+        "point": int(fields.get("customfield_10008", 0)),
+        "key": issue.get("key"),
+        "start": start,
+        "end": end,
+        "cycle": cycle,
+        "subtasks": [],
+    }
 
 
 #
@@ -193,7 +202,7 @@ def update_subtask_status(subtask, item, history, work_hours):
 
     if (from_status in ["ToDo", "Assigned"]) and to_status != "Done":
         subtask["start"] = status_change_datetime
-    elif to_status == "Done":
+    elif to_status == "Done" or "DONE" in to_status:
         subtask["end"] = status_change_datetime
 
     # startとendが両方存在する場合、その間の時間（分）を計算
@@ -217,43 +226,62 @@ def associate_subtasks_with_backlogs(backlogs, subtasks):
         )
 
 
-def main():
-    # 設定ファイル読み込み
-    with open("config.json", "r") as f:
-        config = json.load(f)
+def load_config(path="config.json"):
+    with open(path, "r") as f:
+        return json.load(f)
 
-    # Sprint情報取得
+
+def fetch_sprint_info(config):
     sprint_url = SPRINT_INFO_URL.format(
         BOARD_ID=config["BOARD_ID"],
     )
-    sprint_info = get_specific_sprint(
+    return get_specific_sprint(
         get_sprint_info(sprint_url, config["JIRA_USERNAME"], config["JIRA_PASSWORD"]),
         config["TARGET_SPRINT_NAME"],
     )
 
-    # Subtask情報取得
+
+def fetch_subtask_info(config, sprint):
     jql = JQL.format(
         TARGET_TEAM_LABEL=config["TARGET_TEAM_LABEL"],
         TARGET_SPRINT_NAME=config["TARGET_SPRINT_NAME"],
     )
     subtask_url = SUBTASK_INFO_URL.format(JQL=jql)
-    subtask_info = get_subtask_info(
+    return get_subtask_info(
         subtask_url, config["JIRA_USERNAME"], config["JIRA_PASSWORD"]
     )
 
-    # 勤務時間取得
-    work_hours = WorkHours(
-        config["work_hours"],
-        config["weekends"],
-    )
 
-    # 出力用JSON作成
-    output_json = {
-        "metaData": format_sprint_info(sprint_info),
-        "backlogs": format_subtask_info(subtask_info, sprint_info, work_hours),
+def generate_output(config, issues):
+    with open("debug.json", "w") as f:
+        json.dump(issues, f, ensure_ascii=False, indent=4)
+
+    work_hours = WorkHours(config["work_hours"], config["weekends"])
+    backlogs = format_subtask_info(issues, work_hours)
+    return {
+        "backlogs": backlogs,
     }
 
-    # 出力処理
+
+# === メイン処理（設定読込〜結果出力） ======================
+def main():
+    config = load_config()
+    if not config:
+        print("設定ファイルが読み込めませんでした。")
+        return
+
+    sprint_info = fetch_sprint_info(config)
+    if not sprint_info:
+        print("指定されたスプリントが見つかりません。")
+        return
+
+    issues = fetch_subtask_info(config, sprint_info)
+    if not issues:
+        print("Subtask情報が取得できませんでした。")
+        return
+
+    output_json = generate_output(config, issues)
+
     with open(config["OUTPUT_FILE"], "w") as f:
         json.dump(output_json, f, ensure_ascii=False, indent=4)
 
